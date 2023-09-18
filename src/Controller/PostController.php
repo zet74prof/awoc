@@ -26,6 +26,7 @@ class PostController extends AbstractController
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
         $post = new Post();
+        $post->setDateTimeModif(new \DateTime('now'));
         $form = $this->createForm(PostType::class, $post);
         $form->handleRequest($request);
 
