@@ -5,6 +5,32 @@
 {% block body %}
     <h1>Post index</h1>
 
+<div class="container">
+    {% set i = 0 %}
+    {% for post in posts %}
+    {% if i == 0 %}
+    <div class="row mb-4">
+    {% endif %}
+        <div class="col-lg-4 col-12">
+            <div class="card" style="width: 18rem;">
+                <img src="{{ vich_uploader_asset(post) }}" class="card-img-top">
+                <div class="card-body">
+                    <h5 class="card-title">{{ post.title }}</h5>
+                    <p class="card-text">{{ post.dateTimeModif ? post.dateTimeModif|date('Y-m-d H:i:s') : '' }}</p>
+                    <p class="card-text">{{ post.text }}</p>
+                    <a href="{{ path('app_post_show', {'id': post.id}) }}" class="btn btn-primary">Show</a>
+                    <a href="{{ path('app_post_edit', {'id': post.id}) }}" class="btn btn-primary">Edit</a>
+                </div>
+            </div>
+        </div>
+        {% if i == 2 %}
+        </div>
+        {% set i = -1 %}
+        {% endif %}
+        {% set i = i + 1 %}
+        {% endfor %}
+    </div>
+
     <table class="table">
         <thead>
             <tr>
