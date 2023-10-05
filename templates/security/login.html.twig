@@ -16,10 +16,12 @@
                     <input type="password" id="password" name="_password">
                 </div>
             </div>
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
             <div class="row mt-3">
                 <button class="btn btn-primary" type="submit">login</button>
             </div>
-            <input type="hidden" name="_target_path" value="/login">
+            <input type="hidden" name="_target_path" value="/login  ">
         </form>
     </div>
+    <a href="{{ path('app_forgot_password_request') }}">Mot de passe oublié?</a>
 {% endblock %}
