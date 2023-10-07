@@ -19,6 +19,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use SymfonyCasts\Bundle\ResetPassword\Controller\ResetPasswordControllerTrait;
 use SymfonyCasts\Bundle\ResetPassword\Exception\ResetPasswordExceptionInterface;
 use SymfonyCasts\Bundle\ResetPassword\ResetPasswordHelperInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+
 
 #[Route('/reset-password')]
 class ResetPasswordController extends AbstractController
@@ -74,7 +76,7 @@ class ResetPasswordController extends AbstractController
      * Validates and process the reset URL that the user clicked in their email.
      */
     #[Route('/reset/{token}', name: 'app_reset_password')]
-    public function reset(Request $request, UserPasswordHasherInterface $passwordHasher, TranslatorInterface $translator, string $token = null): Response
+    public function reset(ValidatorInterface $validator, Request $request, UserPasswordHasherInterface $passwordHasher, TranslatorInterface $translator, string $token = null): Response
     {
         if ($token) {
             // We store the token in session and remove it from the URL, to avoid the URL being
@@ -108,18 +110,26 @@ class ResetPasswordController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             // A password reset token should be used only once, remove it.
             $this->resetPasswordHelper->removeResetRequest($token);
+            $user->setRawPassword($form->get('plainPassword')->getData());
+            $errors = $validator->validate($user);
+            if (count($errors) > 0) {
+                foreach ($errors as $error){
+                    $this->addFlash('reset_password_error', $error->getMessage());
+                }
+                return $this->redirectToRoute('app_forgot_password_request');
+            } else {
+                // Encode(hash) the plain password, and set it.
+                $encodedPassword = $passwordHasher->hashPassword(
+                    $user,
+                    $user->getRawPassword()
+                );
 
-            // Encode(hash) the plain password, and set it.
-            $encodedPassword = $passwordHasher->hashPassword(
-                $user,
-                $form->get('plainPassword')->getData()
-            );
+                $user->setPassword($encodedPassword);
+                $this->entityManager->flush();
 
-            $user->setPassword($encodedPassword);
-            $this->entityManager->flush();
-
-            // The session is cleaned up after the password has been changed.
-            $this->cleanSessionAfterReset();
+                // The session is cleaned up after the password has been changed.
+                $this->cleanSessionAfterReset();
+            }
 
             return $this->redirectToRoute('app_login');
         }
