@@ -6,7 +6,18 @@
     <h1>Reset your password</h1>
 
     {{ form_start(resetForm) }}
-        {{ form_row(resetForm.plainPassword) }}
-        <button class="btn btn-primary">Reset password</button>
+    {% if resetForm.plainPasswordCurrent is defined %}
+    <div class="row m-3">
+        <div class="form-floating">
+            {{ form_row(resetForm.plainPasswordCurrent, {'disabled' : true}) }}
+        </div>
+    </div>
+    {% endif %}
+    <div class="row m-3">
+        <div class="form-floating">
+            {{ form_row(resetForm.plainPassword) }}
+        </div>
+    </div>
+    <button class="btn btn-primary">Réinitialiser le mot de passe</button>
     {{ form_end(resetForm) }}
 {% endblock %}
