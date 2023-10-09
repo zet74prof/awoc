@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -36,6 +38,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(type: 'boolean')]
     private $isVerified = false;
+
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: PreviousPasswords::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $previousPasswords;
+
+    public function __construct()
+    {
+        $this->previousPasswords = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -127,6 +137,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setIsVerified(bool $isVerified): static
     {
         $this->isVerified = $isVerified;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, PreviousPasswords>
+     */
+    public function getPreviousPasswords(): Collection
+    {
+        return $this->previousPasswords;
+    }
+
+    public function addPreviousPassword(PreviousPasswords $previousPassword): static
+    {
+        if (!$this->previousPasswords->contains($previousPassword)) {
+            $this->previousPasswords->add($previousPassword);
+            $previousPassword->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removePreviousPassword(PreviousPasswords $previousPassword): static
+    {
+        if ($this->previousPasswords->removeElement($previousPassword)) {
+            // set the owning side to null (unless already changed)
+            if ($previousPassword->getUser() === $this) {
+                $previousPassword->setUser(null);
+            }
+        }
 
         return $this;
     }

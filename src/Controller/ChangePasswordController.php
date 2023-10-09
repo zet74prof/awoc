@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\PreviousPasswords;
 use App\Form\ChangePasswordFormType;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -24,6 +25,7 @@ class ChangePasswordController extends AbstractController
         $form->handleRequest($request);
         $success = false;
         if ($form->isSubmitted() && $form->isValid()) {
+            $user->addPreviousPassword(new PreviousPasswords($user->getPassword(), new \DateTime('now'), $user));
             $user->setPassword(
                 $passwordHasher->hashPassword(
                     $user,
