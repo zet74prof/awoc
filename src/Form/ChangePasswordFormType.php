@@ -11,6 +11,7 @@ use Symfony\Component\Security\Core\Validator\Constraints\UserPassword;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\PasswordStrength;
+use Symfony\Component\Validator\Constraints\Regex;
 
 class ChangePasswordFormType extends AbstractType
 {
@@ -43,11 +44,9 @@ class ChangePasswordFormType extends AbstractType
                         new NotBlank([
                             'message' => 'Saisissez un mot de passe',
                         ]),
-                        new Length([
-                            'min' => 6,
-                            'minMessage' => 'Votre mot de passe doit contenir au minimum {{ limit }} caractères',
-                            // max length allowed by Symfony for security reasons
-                            'max' => 4096,
+                        new Regex([
+                            'pattern' => '^(?=.*[0-9])(?=.*[a-zA-Z])(?=.*[@#&!<>*$%-_\/\=+,;?.:()])[a-zA-Z0-9@#&!<>*$%-_\/\=+,;?.:()]{8,}$',
+                            'message' => 'Votre mot de passe doit contenir au moins 8 caractères, dont au moins un chiffre, une lettre et un caractère spécial',
                         ]),
                         new PasswordStrength([
                             'minScore' => PasswordStrength::STRENGTH_WEAK,
