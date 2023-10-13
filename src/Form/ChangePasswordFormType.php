@@ -57,20 +57,12 @@ class ChangePasswordFormType extends AbstractType
                     'attr' => [
                         'placeholder' => 'Nouveau mot de passe',
                     ],
-                    'row_attr' => [
-                        'class' => 'form-floating',
-                    ],
+                    'label' => 'New password',
                 ],
                 'second_options' => [
-                    'label' => 'Répétez le mot de passe',
-                    'attr' => [
-                        'placeholder' => 'Nouveau mot de passe',
-                    ],
-                    'row_attr' => [
-                        'class' => 'form-floating',
-                    ],
+                    'label' => 'Repeat Password',
                 ],
-                'invalid_message' => 'Les mots de passe ne correspondent pas.',
+                'invalid_message' => 'The password fields must match.',
                 // Instead of being set onto the object directly,
                 // this is read and encoded in the controller
                 'mapped' => false,

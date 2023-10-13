@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
@@ -103,6 +104,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function setPassword(string $password): static
     {
+        $this->addPreviousPassword($password);
         $this->password = $password;
 
         return $this;
@@ -151,10 +153,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function addPreviousPassword(PreviousPasswords $previousPassword): static
     {
-        if (!$this->previousPasswords->contains($previousPassword)) {
-            $this->previousPasswords->add($previousPassword);
-            $previousPassword->setUser($this);
+        if ($this->getPreviousPasswords()->count() >= 5){
+            $this->getPreviousPasswords()->remove($this->getPreviousPasswords()->first());
         }
+        foreach ($this->getPreviousPasswords() as $pp){
+            if ($pp->getPassword() === $previousPassword){
+                throw new AuthenticationException('Vous ne pouvez pas réutiliser l\'un de vos 5 dernier mot de passe');
+            }
+        }
+        $this->previousPasswords->add($previousPassword);
+        $previousPassword->setUser($this);
 
         return $this;
     }
