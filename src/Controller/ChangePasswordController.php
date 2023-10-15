@@ -25,18 +25,42 @@ class ChangePasswordController extends AbstractController
         $form->handleRequest($request);
         $success = false;
         if ($form->isSubmitted() && $form->isValid()) {
-            $user->addPreviousPassword(new PreviousPasswords($user->getPassword(), new \DateTime('now'), $user));
-            $user->setPassword(
-                $passwordHasher->hashPassword(
+            //check if the password set is different from the last 5 previous passwords
+            $passOk = false;
+            $nbPreviousPasswords = $user->getPreviousPasswords()->count();
+
+            for ($i = $nbPreviousPasswords - 1; $i >= $nbPreviousPasswords - 5 && $i >= 0; $i--){
+                if($passwordHasher->isPasswordValid($user->getPreviousPasswords()[$i], $form->get('plainPassword')->getData())){
+                    $passOk = true;
+                }
+            }
+
+            if ($passOk){
+                $this->addFlash('reset_password_error', 'Vous ne pouvez pas réutiliser l\'un de vos 5 derniers mots de passe');
+            } else {
+                // Encode(hash) the plain password, and set it.
+                $encodedPassword = $passwordHasher->hashPassword(
                     $user,
                     $form->get('plainPassword')->getData()
-                )
-            );
-            $entityManager = $doctrine->getManager();
-            $entityManager->persist($user);
-            $entityManager->flush();
+                );
+                //encode the plain password for saving it as a previous password
+                $previousPassword = new PreviousPasswords($user);
+                $previousPassword->setPassword(
+                    $passwordHasher->hashPassword(
+                        $previousPassword,
+                        $form->get('plainPassword')->getData()
+                    )
+                );
+                $user->addPreviousPasswords($previousPassword);
 
-            $success = true;
+                $user->setPassword($encodedPassword);
+
+                $doctrine->getManager()->persist($user);
+                $doctrine->getManager()->persist($previousPassword);
+                $doctrine->getManager()->flush();
+
+                $success = true;
+            }
         }
 
         return $this->render('change_password/index.html.twig', [

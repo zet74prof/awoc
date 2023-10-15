@@ -26,7 +26,7 @@ class UserChecker implements UserCheckerInterface
         if (!$user instanceof AppUser) {
             return;
         }
-        if ($user->getPreviousPasswords()->last()->getDate()->diff(new \DateTime('now'))->days > 90){
+        if ($user->getPasswordChangeDate()->diff(new \DateTime('now'))->days > 90){
             throw new CustomUserMessageAccountStatusException('Mot de passe modifié il y a plus de 90 jours. Vous devez le remplacer. Cliquez sur Mot de passe oublié.', [], 1);
         }
     }

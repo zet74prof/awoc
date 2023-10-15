@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\PreviousPasswords;
 use App\Entity\User;
 use App\Form\ChangePasswordFormType;
 use App\Form\ResetPasswordRequestFormType;
@@ -109,21 +110,48 @@ class ResetPasswordController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // A password reset token should be used only once, remove it.
-            $this->resetPasswordHelper->removeResetRequest($token);
-            // Encode(hash) the plain password, and set it.
-            $encodedPassword = $passwordHasher->hashPassword(
-                $user,
-                $form->get('plainPassword')->getData()
-            );
+            //check if the password set is different from the last 5 previous passwords
+            $passOk = false;
+            $nbPreviousPasswords = $user->getPreviousPasswords()->count();
 
-            $user->setPassword($encodedPassword);
-            $this->entityManager->flush();
+            for ($i = $nbPreviousPasswords - 1; $i >= $nbPreviousPasswords - 5 && $i >= 0; $i--){
+                if($passwordHasher->isPasswordValid($user->getPreviousPasswords()[$i], $form->get('plainPassword')->getData())){
+                    $passOk = true;
+                }
+            }
 
-            // The session is cleaned up after the password has been changed.
-            $this->cleanSessionAfterReset();
+            if ($passOk){
+                $this->addFlash('reset_password_error', 'Vous ne pouvez pas réutiliser l\'un de vos 5 derniers mots de passe');
+                return $this->redirectToRoute('app_reset_password');
+            } else {
+                // A password reset token should be used only once, remove it.
+                $this->resetPasswordHelper->removeResetRequest($token);
+                // Encode(hash) the plain password, and set it.
+                $encodedPassword = $passwordHasher->hashPassword(
+                    $user,
+                    $form->get('plainPassword')->getData()
+                );
+                //encode the plain password for saving it as a previous password
+                $previousPassword = new PreviousPasswords($user);
+                $previousPassword->setPassword(
+                    $passwordHasher->hashPassword(
+                        $previousPassword,
+                        $form->get('plainPassword')->getData()
+                    )
+                );
+                $user->addPreviousPasswords($previousPassword);
 
-            return $this->redirectToRoute('app_login');
+                $user->setPassword($encodedPassword);
+
+                $this->entityManager->persist($user);
+                $this->entityManager->persist($previousPassword);
+                $this->entityManager->flush();
+
+                // The session is cleaned up after the password has been changed.
+                $this->cleanSessionAfterReset();
+
+                return $this->redirectToRoute('app_login');
+            }
         }
 
         return $this->render('reset_password/reset.html.twig', [

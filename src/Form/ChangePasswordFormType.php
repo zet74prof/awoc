@@ -2,6 +2,7 @@
 
 namespace App\Form;
 
+use App\Validator\PasswordHistory;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
@@ -44,14 +45,10 @@ class ChangePasswordFormType extends AbstractType
                         new NotBlank([
                             'message' => 'Saisissez un mot de passe',
                         ]),
-                        new Regex([
-                            'pattern' => '^(?=.*[0-9])(?=.*[a-zA-Z])(?=.*[@#&!<>*$%-_\/\=+,;?.:()])[a-zA-Z0-9@#&!<>*$%-_\/\=+,;?.:()]{8,}$',
-                            'message' => 'Votre mot de passe doit contenir au moins 8 caractères, dont au moins un chiffre, une lettre et un caractère spécial',
-                        ]),
                         new PasswordStrength([
-                            'minScore' => PasswordStrength::STRENGTH_WEAK,
-                            'message' => 'Mot de passe trop simple',
-                        ])
+                            'message' => 'Votre mot de passe n\'est pas assez complexe',
+                            'minScore' => PasswordStrength::STRENGTH_MEDIUM,
+                        ]),
                     ],
                     'label' => 'Nouveau mot de passe',
                     'attr' => [

@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\PreviousPasswords;
 use App\Entity\User;
 use App\Form\RegistrationFormType;
 use App\Security\EmailVerifier;
@@ -41,8 +42,18 @@ class RegistrationController extends AbstractController
                 )
             );
 
+            //encode the plain password for saving it as a previous password
+            $previousPassword = new PreviousPasswords($user);
+            $previousPassword->setPassword(
+                $userPasswordHasher->hashPassword(
+                    $previousPassword,
+                    $form->get('plainPassword')->getData()
+                )
+            );
+            $user->addPreviousPasswords($previousPassword);
 
             $entityManager->persist($user);
+            $entityManager->persist($previousPassword);
             $entityManager->flush();
 
             // generate a signed url and email it to the user
@@ -78,8 +89,8 @@ class RegistrationController extends AbstractController
         }
 
         // @TODO Change the redirect on success and handle or remove the flash message in your templates
-        $this->addFlash('success', 'Your email address has been verified.');
+        $this->addFlash('success', 'Votre email a été vérifié.');
 
-        return $this->redirectToRoute('app_register');
+        return $this->redirectToRoute('app_home');
     }
 }

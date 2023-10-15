@@ -5,9 +5,10 @@ namespace App\Entity;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
-use Symfony\Component\Security\Core\Exception\AuthenticationException;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasher;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
@@ -40,8 +41,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'boolean')]
     private $isVerified = false;
 
-    #[ORM\OneToMany(mappedBy: 'user', targetEntity: PreviousPasswords::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: PreviousPasswords::class, orphanRemoval: true)]
     private Collection $previousPasswords;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    private ?\DateTimeInterface $passwordChangeDate = null;
 
     public function __construct()
     {
@@ -104,8 +108,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function setPassword(string $password): static
     {
-        $this->addPreviousPassword($password);
         $this->password = $password;
+        $this->setPasswordChangeDate(new \DateTime('now'));
 
         return $this;
     }
@@ -151,30 +155,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->previousPasswords;
     }
 
-    public function addPreviousPassword(PreviousPasswords $previousPassword): static
+    public function addPreviousPasswords(PreviousPasswords $previousPassword): static
     {
-        if ($this->getPreviousPasswords()->count() >= 5){
-            $this->getPreviousPasswords()->remove($this->getPreviousPasswords()->first());
+        if (!$this->previousPasswords->contains($previousPassword)) {
+            $this->previousPasswords->add($previousPassword);
+            $previousPassword->setUser($this);
         }
-        foreach ($this->getPreviousPasswords() as $pp){
-            if ($pp->getPassword() === $previousPassword){
-                throw new AuthenticationException('Vous ne pouvez pas réutiliser l\'un de vos 5 dernier mot de passe');
-            }
-        }
-        $this->previousPasswords->add($previousPassword);
-        $previousPassword->setUser($this);
 
         return $this;
     }
 
-    public function removePreviousPassword(PreviousPasswords $previousPassword): static
+    public function removePreviousPasswords(PreviousPasswords $previousUser): static
     {
-        if ($this->previousPasswords->removeElement($previousPassword)) {
+        if ($this->previousPasswords->removeElement($previousUser)) {
             // set the owning side to null (unless already changed)
-            if ($previousPassword->getUser() === $this) {
-                $previousPassword->setUser(null);
+            if ($previousUser->getUser() === $this) {
+                $previousUser->setUser(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getPasswordChangeDate(): ?\DateTimeInterface
+    {
+        return $this->passwordChangeDate;
+    }
+
+    public function setPasswordChangeDate(\DateTimeInterface $passwordChangeDate): static
+    {
+        $this->passwordChangeDate = $passwordChangeDate;
 
         return $this;
     }
